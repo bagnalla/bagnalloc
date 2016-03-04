@@ -1,6 +1,6 @@
 CC = gcc
 CPP = g++
-OPTIONS = -Wall -pthread
+OPTIONS = -Wall -O3
 LDLIBS =
 
 objects = malloc.o
@@ -10,6 +10,9 @@ all: test.c $(objects)
 
 cpp: cpptest.cc $(objects)
 	$(CPP) cpptest.cc $(objects) $(OPTIONS)
+
+thread: threads.cc $(objects)
+	$(CPP) threads.cc $(objects) $(OPTIONS) -std=c++11 -fopenmp
 
 %.o: %.c
 	$(CC) $< -c $(OPTIONS) $(LDLIBS) -o $@

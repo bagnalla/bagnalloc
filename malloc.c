@@ -5,11 +5,12 @@
  * @brief File containing implementations of malloc(), free(), calloc(), and realloc().
  *
  * With these memory allocation functions, all dynamic memory is allocated in heap which is implemented as a doubly-linked list.
- * They can be used as a general-purpose replacement for the equivalent standard library functions.
+ * They can be used as a general-purpose replacement for the equivalent standard library functions (or so I think - may be unsafe in some way).
  * This implementation tends to perform better than the standard implementation for medium/large allocations but worse for small allocations.
  * The memory overhead for block metadata is also larger than the standard implementation which is most noticeable when doing a lot of small allocations.
  * The heap size is managed via the glibc sbrk() function.
- * Thread safety is guaranteed via a pthread mutex. (must be compiled with -pthread compiler flag)
+ * Thread safety is guaranteed via a pthread mutex.
+ * Beware though, errors will not result in a nice exception like bad_alloc.
  */
 
 #include <stdio.h>
@@ -30,7 +31,7 @@
  *  A pointer to the next block. NULL if the current block has been allocated (not free).
  *  If the current block is free, next points to either the next free block or end_brk if the current block is the last free block.
  *  @var x
- *  Reserved. Required for the struct to be long word aligned.
+ *  Reserved. Required for the struct to be long word aligned on a 32-bit system.
  */
 typedef struct block_meta {
   size_t length;
@@ -66,7 +67,7 @@ static void *end_brk;
 static block_meta *free_blocks;
 static block_meta *last_free_block;
 
-static pthread_mutex_t mutex;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutexattr_t attr;
 
 /** 
@@ -75,19 +76,16 @@ static pthread_mutexattr_t attr;
 static void init_heap()
 {
     // initialize recursive mutex
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&mutex, &attr);
+    //pthread_mutexattr_init(&attr);
+    //pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    //pthread_mutex_init(&mutex, &attr);
 
     // get system page size
     page_size = sysconf(_SC_PAGESIZE);
 
     // get initial addresses for everything
-    start_brk = sbrk(page_size);
+    start_brk = free_blocks = last_free_block = sbrk(page_size);
     end_brk = start_brk + page_size;
-    // align
-    //start_brk = free_blocks = last_free_block = round_up_multof(start_brk, 8);
-    free_blocks = last_free_block = start_brk;
     
     // start with one big free block
     free_blocks->length = page_size - sizeof(block_meta);
@@ -265,7 +263,7 @@ void* malloc(size_t size)
     // so the size of the heap must be increased
 
     // if the last free block was at the end of the heap, expand it to the new end
-    if (prev_free_block != NULL && (char*) prev_free_block + sizeof(block_meta) + prev_free_block->length == end_brk)
+    if (prev_free_block != NULL && (char*)prev_free_block + sizeof(block_meta) + prev_free_block->length == end_brk)
     {
         // length of last free block
         size_t length = prev_free_block->length;
@@ -445,13 +443,13 @@ void *calloc(size_t nmemb, size_t size)
     if (!real_size)
         return NULL;
         
-    pthread_mutex_lock(&mutex);
+    //pthread_mutex_lock(&mutex);
 
-    void *ptr = malloc(real_size);
+    void * volatile ptr = malloc(real_size);
 
     memset(ptr, 0, real_size);
     
-    pthread_mutex_unlock(&mutex);
+    //pthread_mutex_unlock(&mutex);
 
     return ptr;
 }
@@ -479,9 +477,12 @@ void *realloc(void *ptr, size_t size)
         free(ptr);
         return NULL;
     }
+    
+    //pthread_mutex_lock(&mutex);
 
-    void *new_ptr = malloc(size);
+    void * volatile new_ptr = malloc(size);
 
+    // length field of ptr's data block
     size_t old_size = * (size_t*) ((char*)ptr - sizeof(block_meta));
 
     size_t min_size = old_size < size ? old_size : size; // min
@@ -489,6 +490,8 @@ void *realloc(void *ptr, size_t size)
     memcpy(new_ptr, ptr, min_size);
 
     free(ptr);
+    
+    //pthread_mutex_unlock(&mutex);
 
     return new_ptr;
 }
