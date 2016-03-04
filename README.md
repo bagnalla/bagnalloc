@@ -8,3 +8,5 @@ The memory overhead for block metadata is also larger than the standard implemen
 The heap size is managed via the glibc sbrk() function.
 Thread safety is guaranteed via a pthread mutex.
 Beware though, errors will not result in a nice exception like bad_alloc.
+
+A couple test programs along with a makefile are included.
