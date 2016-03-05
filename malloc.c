@@ -19,7 +19,6 @@
 #include <sys/param.h>
 #include <sys/mman.h>
 #include <pthread.h>
-#include <errno.h>
 
 #define HEAP_GROWTH_INCREMENT 4 // # of pages
 #define MMAP_THRESHOLD 128*1024 // # of bytes
