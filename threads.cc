@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define N 1000
+#define N 500
 //#define N 1
 #define k 10000;
 

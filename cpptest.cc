@@ -1,7 +1,7 @@
 #include <vector>
 #include <stdio.h>
 
-#define N 100000
+#define N 1000000
 
 using namespace std;
 
@@ -24,7 +24,7 @@ int main()
     
     printf("\nv3...\n");
     for (int i = 0; i < N; ++i)
-        v3.push_back(i*3000);
+        v3.push_back((unsigned long long)i*3000);
     v3.clear();
     
     printf("\nv4...\n");
