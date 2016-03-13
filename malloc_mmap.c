@@ -19,7 +19,7 @@
 #include <pthread.h>
 
 #define HEAP_GROWTH_INCREMENT 4 // # of pages
-#define MMAP_THRESHOLD 128*1024 // # of bytes
+#define MMAP_THRESHOLD 256*1024 // # of bytes
  
 /** @struct block_meta
  *  @brief The structure at the beginning of every block node in the heap (whether free or allocated).
@@ -230,24 +230,24 @@ void* malloc(size_t size)
     size = round_up_multof(size, 8);
     
     // use mmap if size is big enough
-    //if (size >= MMAP_THRESHOLD)
-    //{
-        //// extra space for length metadata
-        //size_t mmap_size = round_up_multof(size + 8, page_size);
-        //size_t *ptr = (size_t*)mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        //size_t *return_ptr;
-        //*ptr = mmap_size;
-        //// on 32-bit system need to return ptr + 2 to be long word aligned
-        //if (sizeof(size_t) % 8)
-        //{
-            //*(ptr + 1) = mmap_size;
-            //return_ptr = ptr + 2;
-        //}
-        //else
-            //return_ptr = ptr + 1;
-        //pthread_mutex_unlock(&mutex);
-        //return return_ptr;
-    //}
+    if (size >= MMAP_THRESHOLD)
+    {
+        // extra space for length metadata
+        size_t mmap_size = round_up_multof(size + 8, page_size);
+        size_t *ptr = (size_t*)mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        size_t *return_ptr;
+        *ptr = mmap_size;
+        // on 32-bit system need to return ptr + 2 to be long word aligned
+        if (sizeof(size_t) % 8)
+        {
+            *(ptr + 1) = mmap_size;
+            return_ptr = ptr + 2;
+        }
+        else
+            return_ptr = ptr + 1;
+        pthread_mutex_unlock(&mutex);
+        return return_ptr;
+    }
 
     // begin at free_blocks
     block_meta *cursor = free_blocks;
@@ -329,15 +329,15 @@ void free(void *ptr)
         
     pthread_mutex_lock(&mutex);
     
-    //// if outside the heap, must be mmapped
-    //if (ptr < start_brk || ptr > end_brk)
-    //{
-        //void *mmap_ptr = ptr - sizeof(size_t);
-        //size_t size = *(size_t*)mmap_ptr;
-        //munmap(mmap_ptr, size);
-        //pthread_mutex_unlock(&mutex);
-        //return;
-    //}
+    // if outside the heap, must be mmapped
+    if (ptr < start_brk || ptr > end_brk)
+    {
+        void *mmap_ptr = ptr - sizeof(size_t);
+        size_t size = *(size_t*)mmap_ptr;
+        munmap(mmap_ptr, size);
+        pthread_mutex_unlock(&mutex);
+        return;
+    }
 
     // block we are freeing
     block_meta *block = ptr - sizeof(block_meta);
@@ -508,31 +508,31 @@ void *realloc(void *ptr, size_t size)
     void * volatile new_ptr = malloc(size);
     
     size_t old_size;
-    //// if ptr is mmapped
-    //if (ptr < start_brk || ptr > end_brk)
-    //{
-        //// length is in the sizeof(size_t) bytes preceding ptr
-        //old_size = *(size_t*)(ptr - sizeof(size_t)) - sizeof(size_t);
-    //}
-    //// else in heap
-    //else
-    //{
+    // if ptr is mmapped
+    if (ptr < start_brk || ptr > end_brk)
+    {
+        // length is in the sizeof(size_t) bytes preceding ptr
+        old_size = *(size_t*)(ptr - sizeof(size_t)) - sizeof(size_t);
+    }
+    // else in heap
+    else
+    {
         // length field of ptr's data block
         old_size = * (size_t*) ((char*)ptr - sizeof(block_meta));
-    //}
+    }
     
     size_t new_size;
     // if new_ptr is mmapped
-    //if (new_ptr < start_brk || new_ptr > end_brk)
-    //{
-        //// length is in the sizeof(size_t) bytes preceding new_ptr
-        //new_size = *(size_t*)(new_ptr - sizeof(size_t)) - sizeof(size_t);
-    //}
-    //// else in heap
-    //else
-    //{
+    if (new_ptr < start_brk || new_ptr > end_brk)
+    {
+        // length is in the sizeof(size_t) bytes preceding new_ptr
+        new_size = *(size_t*)(new_ptr - sizeof(size_t)) - sizeof(size_t);
+    }
+    // else in heap
+    else
+    {
         new_size = size;
-    //}
+    }
 
     size_t min_size = old_size < new_size ? old_size : new_size; // min
 
