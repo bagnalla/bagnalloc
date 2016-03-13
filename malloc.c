@@ -47,7 +47,8 @@ typedef struct block_meta {
  * current implementation sets next to NULL on data blocks so it can
  * easily check whether a block is free or not. I could do some hacky
  * stuff like using one of the bits in the length field as an "is free"
- * flag and only having 31 bit length but I'm keeping it simple for now.
+ * flag and only having 31 bit length but I guess that would limit the
+ * block size to 2 GB. I'm going to keep it simple for now.
 */
 
 /** 

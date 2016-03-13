@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 #define N 1000
 //#define N 1
@@ -12,7 +13,7 @@ int count = 0;
 int main()
 {
     //time_t t;
-    //srand((unsigned) time(&t));
+    srand((unsigned)time(NULL));
     
     size_t i, j;
     
@@ -33,8 +34,9 @@ int main()
     
     for (j = 0; j < 1000; ++j)
     {
-        void *stuff[N];
-        for (i = 0; i < N; ++i)
+        size_t NN = rand() % N;
+        void *stuff[NN];
+        for (i = 0; i < NN; ++i)
         {
             size_t n = rand() % k;
             //size_t n = 1;
@@ -43,7 +45,7 @@ int main()
             memset(stuff[i], 69, n);
         }
         
-        for (i = 0; i < N; ++i)
+        for (i = 0; i < NN; ++i)
         {
             free(stuff[i]);
         }

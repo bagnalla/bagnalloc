@@ -5,7 +5,7 @@ LDLIBS =
 
 objects = malloc.o
 
-all: test.c $(objects)
+test: test.c $(objects)
 	$(CC) test.c $(objects) $(OPTIONS) $(LDLIBS)
 
 cpp: cpptest.cc $(objects)
