@@ -32,7 +32,7 @@ int main()
         //count++;
     //}
     
-    for (j = 0; j < 1000; ++j)
+    for (j = 0; j < 2000; ++j)
     {
         size_t NN = rand() % N;
         void *stuff[NN];

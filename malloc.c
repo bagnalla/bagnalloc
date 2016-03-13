@@ -233,15 +233,22 @@ void* malloc(size_t size)
     // use mmap if size is big enough
     if (size >= MMAP_THRESHOLD)
     {
-        size_t mmap_size = round_up_multof(size + sizeof(size_t), page_size);
-        size_t *ptr = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        // extra space for length metadata
+        size_t mmap_size = round_up_multof(size + 8, page_size);
+        size_t *ptr = (size_t*)mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        size_t *return_ptr;
         *ptr = mmap_size;
+        // on 32-bit system need to return ptr + 2 to be long word aligned
+        if (sizeof(size_t) % 8)
+        {
+            *(ptr + 1) = mmap_size;
+            return_ptr = ptr + 2;
+        }
+        else
+            return_ptr = ptr + 1;
         pthread_mutex_unlock(&mutex);
-        //printf("mmap %d\n", ptr + 1);
-        return ptr + 1;
+        return return_ptr;
     }
-    
-    //printf("malloc\n");
 
     // begin at free_blocks
     block_meta *cursor = free_blocks;
@@ -326,15 +333,12 @@ void free(void *ptr)
     // if outside the heap, must be mmapped
     if (ptr < start_brk || ptr > end_brk)
     {
-        //printf("munmap %d\n", ptr);
         void *mmap_ptr = ptr - sizeof(size_t);
         size_t size = *(size_t*)mmap_ptr;
         munmap(mmap_ptr, size);
         pthread_mutex_unlock(&mutex);
         return;
     }
-    
-    //printf("free %d\n", ptr);
 
     // block we are freeing
     block_meta *block = ptr - sizeof(block_meta);
@@ -488,7 +492,7 @@ void *calloc(size_t nmemb, size_t size)
 void *realloc(void *ptr, size_t size)
 {
     size = round_up_multof(size, 8);
-
+    
     // if ptr is NULL, equivalent to malloc(size)
     if (ptr == NULL)
         return malloc(size);
