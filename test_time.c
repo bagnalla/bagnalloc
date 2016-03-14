@@ -14,11 +14,10 @@ int main()
 {
     srand((unsigned)time(NULL));
     FILE *file = fopen("test.dat", "w");
-    //fprintf(file, "bakow\n");
     
     size_t bytes;
     //for (bytes = 1; bytes < 256 * 1024; ++bytes)
-    for (bytes = 0; bytes <= 1024 * 1024; bytes += 32)
+    for (bytes = 0; bytes <= 768 * 1024; bytes += 32)
     {
         clock_t start = clock();
         
@@ -31,7 +30,7 @@ int main()
             memset(stuff[i], 0, n_bytes);
         }
         
-        for (i = 0; i < N; ++i)
+        for (i = 0; i < N - 1; ++i)
         {
             free(stuff[i]);
         }

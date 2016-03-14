@@ -8,15 +8,15 @@ using namespace std;
 
 #define N 500
 //#define N 1
-#define k 10000;
+#define k 512 * 1024;
 
 int main()
 {
     srand((unsigned)time(NULL));
     
-    // execute 100 times in parallel
+    // execute 64 times in parallel
     #pragma omp parallel for
-    for (size_t j = 0; j < 100; ++j)
+    for (size_t j = 0; j < 64; ++j)
     {
         ////////////////////////////////////////////////////////////////
         // STEP 1: MALLOC + FREE
@@ -35,8 +35,8 @@ int main()
             memset(stuff1[i], 0, n);
         }
         
-        // free memory for each pointer
-        for (size_t i = 0; i < NN; ++i)
+        // free memory for each pointer except one
+        for (size_t i = 0; i < NN ? NN - 1 : 0; ++i)
             free(stuff1[i]);
         
         ////////////////////////////////////////////////////////////////
@@ -63,8 +63,8 @@ int main()
             stuff2[i] = realloc(stuff2[i], n);
         }
         
-        // free memory for each pointer
-        for (size_t i = 0; i < NN; ++i)
+        // free memory for each pointer except one
+        for (size_t i = 0; i < NN ? NN - 1 : 0; ++i)
             free(stuff2[i]);
     }
     

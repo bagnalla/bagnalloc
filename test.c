@@ -6,7 +6,7 @@
 
 #define N 1000
 //#define N 1
-#define k 10000;
+#define k 512 * 1024;
 
 int count = 0;
 
@@ -16,7 +16,7 @@ int main()
     
     size_t i, j;
     
-    for (j = 0; j < 2000; ++j)
+    for (j = 0; j < 100; ++j)
     {
         size_t NN = rand() % N;
         void *stuff[NN];
@@ -24,10 +24,10 @@ int main()
         {
             size_t n = rand() % k;
             stuff[i] = malloc(n);
-            memset(stuff[i], 69, n);
+            memset(stuff[i], 0, n);
         }
         
-        for (i = 0; i < NN; ++i)
+        for (i = 0; i < NN ? NN - 1 : 0; ++i)
         {
             free(stuff[i]);
         }
@@ -38,7 +38,7 @@ int main()
     {
         size_t n = rand() % k;
         stuff[i] = malloc(n);
-        memset(stuff[i], 69, n);
+        memset(stuff[i], 0, n);
     }
     
     return 0;

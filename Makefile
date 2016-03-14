@@ -3,7 +3,7 @@ CPP = g++
 OPTIONS = -Wall -O3
 LDLIBS =
 
-objects = malloc_mmap.o
+objects = malloc.o
 
 test: test.c $(objects)
 	$(CC) test.c $(objects) $(OPTIONS) $(LDLIBS)
