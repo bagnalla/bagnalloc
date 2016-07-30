@@ -1,4 +1,4 @@
-# bagnalloc
+# malloc
 An alternative implementation of the C dynamic memory allocation functions malloc, free, calloc, and realloc.
 
 The memory overhead for block metadata is larger than the standard implementation which is most noticeable when doing a lot of small allocations.
